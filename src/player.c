@@ -19,6 +19,8 @@ void player_bind(player *p, song *s, backend *b)
     atomic_store(&p->playing, 0);
     atomic_store(&p->finished, 0);
     atomic_store(&p->seek_state, 0);
+    atomic_store(&p->seek_pos, 0);
+    atomic_store(&p->seek_tick, 0);
     atomic_store(&p->late, 0);
     atomic_store(&p->dropped, 0);
     atomic_store(&p->skipped, 0);
@@ -173,6 +175,7 @@ void player_seek(player *p, uint32_t tick)
         if (key >= 0 && last[key] != k) continue;
         send_retry(p, it);
     }
+    atomic_store(&p->seek_tick, tick);
     atomic_store(&p->seek_pos, frame);
     atomic_store(&p->seek_next, (uint64_t)end);
     atomic_store(&p->finished, 0);
@@ -193,6 +196,10 @@ void player_set_mutes(player *p, uint32_t mask)
 
 uint32_t player_tick(const player *p)
 {
-    uint64_t pos = atomic_load(&((player *)p)->pub_pos);
+    player *q = (player *)p;
+    uint64_t pos = atomic_load(&q->pub_pos);
+    /* a seek lands on the quantum at or before its target: until playing moves on, it is at the target
+     * (or it would read as the bar before, and -> would never get past it) */
+    if (pos == atomic_load(&q->seek_pos)) return atomic_load(&q->seek_tick);
     return (uint32_t)smf_sec_to_tick(p->s, (double)pos / p->b->rate);
 }

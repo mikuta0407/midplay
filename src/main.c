@@ -1,15 +1,16 @@
-/* midplay -- a terminal MIDI file player for macOS.
+/* midplay -- a terminal MIDI file player for macOS and Linux.
  *
  *   midplay [options] [FILE.mid | DIRECTORY]   play a file, or browse (the last directory, or here)
- *   midplay list                               the outputs: Audio Unit instruments and MIDI destinations
- *   midplay hash [--rate HZ] [-o OUT] FILE     render through an Audio Unit offline, print sha256
+ *   midplay list                               the outputs: synths (Audio Units / SoundFonts) and MIDI ports
+ *   midplay hash [--rate HZ] [-o OUT] FILE     render through a synth offline, print sha256
  *
  * options:
- *   -o, --output OUT    au:MANU/SUBT, au:NAME, midi:NAME (part of the name) or a number from `midplay list`
+ *   -o, --output OUT    au:MANU/SUBT, au:NAME (macOS), sf:PATH, sf:NAME (Linux), midi:NAME (part of the
+ *                       name) or a number from `midplay list`
  *   --autoplay / --no-autoplay     start playing when a file is opened (default: the setting, else yes)
  *   --exit-at-end / --stay         at the end of the song quit to the shell / stop and stay
  *   --ascii             draw with ASCII only
- *   --null-audio        (testing) drive an Audio Unit from a timer and discard the sound
+ *   --null-audio        (testing) drive the synth from a timer and discard the sound
  *
  * Settings changed on the settings screen (c) are kept in ~/.config/midplay/config ($MIDPLAY_CONFIG);
  * command-line options apply to this run only.
@@ -57,11 +58,15 @@ static void usage(FILE *f)
             "       midplay list\n"
             "       midplay hash [--rate HZ] [-o OUT] FILE.mid\n"
             "options:\n"
+#ifdef __APPLE__
             "  -o, --output OUT   au:MANU/SUBT | au:NAME | midi:NAME | N (see `midplay list`)\n"
+#else
+            "  -o, --output OUT   sf:PATH | sf:NAME | midi:NAME | N (see `midplay list`)\n"
+#endif
             "  --autoplay, --no-autoplay   start playing when a file is opened\n"
             "  --exit-at-end, --stay       at the end: quit to the shell / stop and stay\n"
             "  --ascii            ASCII-only drawing\n"
-            "  --null-audio       (testing) Audio Unit driven by a timer, sound discarded\n"
+            "  --null-audio       (testing) synth driven by a timer, sound discarded\n"
             "settings: %s\n",
             config_path());
 }
@@ -71,11 +76,11 @@ static int cmd_list(void)
     output_info all[256];
     size_t n = outputs_list(all, 256), i;
     if (!n) {
-        printf("no Audio Unit instruments and no MIDI destinations\n");
+        printf("no " SYNTH_NOUN " and no MIDI destinations\n");
         return 1;
     }
     for (i = 0; i < n; i++)
-        printf("%3zu. [%s] %-44s %s\n", i + 1, all[i].is_au ? "AU  " : "MIDI", all[i].name, all[i].spec);
+        printf("%3zu. [%-4s] %-44s %s\n", i + 1, all[i].is_synth ? SYNTH_KIND : "MIDI", all[i].name, all[i].spec);
     return 0;
 }
 
@@ -87,7 +92,7 @@ static int resolve_output(const char *spec, output_info *o)
         return -1;
     }
     if (outputs_default(o) == 0) return 0;
-    fprintf(stderr, "midplay: no Audio Unit instruments and no MIDI destinations\n");
+    fprintf(stderr, "midplay: no " SYNTH_NOUN " and no MIDI destinations\n");
     return -1;
 }
 
@@ -155,11 +160,14 @@ static void open_song(app *a, const char *path)
     }
     a->screen = SCR_PLAYER;
     {
-        char dir[PATH_MAX];
+        char dir[PATH_MAX], real[PATH_MAX];
         const char *slash = strrchr(path, '/');
         if (slash) {
             snprintf(dir, sizeof dir, "%.*s", (int)(slash - path), path);
-            if (realpath(dir, a->cfg.last_dir)) config_save(&a->cfg);
+            if (realpath(dir, real) && strlen(real) < sizeof a->cfg.last_dir) {
+                memcpy(a->cfg.last_dir, real, strlen(real) + 1);
+                config_save(&a->cfg);
+            }
         }
     }
 }

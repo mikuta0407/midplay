@@ -44,7 +44,7 @@ static void cfstr(CFStringRef s, char *out, size_t n)
     if (s && !CFStringGetCString(s, out, (CFIndex)n, kCFStringEncodingUTF8)) out[0] = 0;
 }
 
-size_t au_list(output_info *out, size_t cap)
+size_t synth_list(output_info *out, size_t cap)
 {
     AudioComponentDescription d = { kAudioUnitType_MusicDevice, 0, 0, 0, 0 };
     AudioComponent c = NULL;
@@ -59,7 +59,7 @@ size_t au_list(output_info *out, size_t cap)
         if (name) CFRelease(name);
         fourcc(m, cd.componentManufacturer);
         fourcc(st, cd.componentSubType);
-        out[n].is_au = 1;
+        out[n].is_synth = 1;
         snprintf(out[n].spec, sizeof out[n].spec, "au:%s/%s", m, st);
         if (!out[n].name[0]) snprintf(out[n].name, sizeof out[n].name, "%s", out[n].spec);
         n++;
@@ -257,7 +257,7 @@ static void au_destroy(backend *b)
     free(a);
 }
 
-backend *au_open(const output_info *o, int null_audio, char *err, size_t errlen)
+backend *synth_open(const output_info *o, int null_audio, char *err, size_t errlen)
 {
     au_backend *a = calloc(1, sizeof *a);
     double rate = 44100.0;
@@ -298,7 +298,7 @@ backend *au_open(const output_info *o, int null_audio, char *err, size_t errlen)
     }
     snprintf(a->base.name, sizeof a->base.name, "%s", o->name);
     snprintf(a->base.spec, sizeof a->base.spec, "%s", o->spec);
-    a->base.is_au = 1;
+    a->base.is_synth = 1;
     a->base.rate = rate;
     a->base.quantum = BLOCK;
     a->base.send = au_send;
@@ -309,7 +309,7 @@ backend *au_open(const output_info *o, int null_audio, char *err, size_t errlen)
     return &a->base;
 }
 
-int au_render_hash(const output_info *o, song *s, double rate, char hex[65], char *err, size_t errlen)
+int synth_render_hash(const output_info *o, song *s, double rate, char hex[65], char *err, size_t errlen)
 {
     au_backend a;
     player p;

@@ -5,6 +5,7 @@
 #include <string.h>
 
 #include "names.h"
+#include "outputs.h"
 
 static const int ch_color[16] = { 203, 209, 221, 191, 120, 85, 87, 81, 75, 141, 177, 213, 218, 223, 230, 252 };
 
@@ -151,7 +152,7 @@ void view_draw(sbuf *sb, player *p, viewstate *v, playui *u, int W, int H)
     const song *s = p->s;
     uint64_t pos = atomic_load(&p->pub_pos);
     double sec = (double)pos / p->b->rate, total = (double)s->end_frame / p->b->rate;
-    uint32_t tick = (uint32_t)smf_sec_to_tick(s, sec), bar, beat, tk, cell = s->division / 4 ? s->division / 4 : 1;
+    uint32_t tick = player_tick(p), bar, beat, tk, cell = s->division / 4 ? s->division / 4 : 1;
     int playing = atomic_load(&p->playing), finished = atomic_load(&p->finished), seeking = atomic_load(&p->seek_state);
     int row, c, i, wide, fixed, lane, ph;
     char buf[1024];
@@ -179,7 +180,7 @@ void view_draw(sbuf *sb, player *p, viewstate *v, playui *u, int W, int H)
     {
         const tsig *g = smf_sig_at(s, tick);
         int load = (int)(u->load_shown * 100.0f + 0.5f);
-        if (p->b->is_au)
+        if (p->b->is_synth)
             snprintf(buf, sizeof buf, " %s  BPM %6.2f  %u/%u  %04u:%02u:%03u  %02d:%04.1f/%02d:%02d  DSP %3d%%  ", v->mode,
                      60000000.0 / v->uspq, g->num, g->den, bar + 1, beat + 1, tk, (int)(sec / 60), sec - 60 * (int)(sec / 60),
                      (int)(total / 60), (int)total % 60, load);
@@ -188,7 +189,7 @@ void view_draw(sbuf *sb, player *p, viewstate *v, playui *u, int W, int H)
                      60000000.0 / v->uspq, g->num, g->den, bar + 1, beat + 1, tk, (int)(sec / 60), sec - 60 * (int)(sec / 60),
                      (int)(total / 60), (int)total % 60);
         i = 16 + sb_text(sb, buf, W - 16, 0);
-        if (p->b->is_au && W - i >= 21) {
+        if (p->b->is_synth && W - i >= 21) {
             sb_str(sb, "L");
             meter(sb, u->meter_l, 8, u->meter_l >= 1.0f ? 196 : 120);
             sb_str(sb, " R");
@@ -200,7 +201,7 @@ void view_draw(sbuf *sb, player *p, viewstate *v, playui *u, int W, int H)
     sb_attr(sb, ATTR(245, -1, 0, 0, 0));
     sb_str(sb, " Out ");
     sb_attr(sb, ATTR(117, -1, 0, 1, 0));
-    if (p->b->is_au) snprintf(buf, sizeof buf, "%s (AU, %.0f Hz)", p->b->name, p->b->rate);
+    if (p->b->is_synth) snprintf(buf, sizeof buf, "%s (" SYNTH_KIND ", %.0f Hz)", p->b->name, p->b->rate);
     else snprintf(buf, sizeof buf, "%s (MIDI)", p->b->name);
     i = 5 + sb_text(sb, buf, W - 5, 0);
     if (W - i > 10) {

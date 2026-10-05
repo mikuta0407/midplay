@@ -42,7 +42,7 @@ size_t midi_list(output_info *out, size_t cap)
     for (i = 0; i < n && k < cap; i++) {
         MIDIEndpointRef d = MIDIGetDestination(i);
         if (!d) continue;
-        out[k].is_au = 0;
+        out[k].is_synth = 0;
         name_of(d, out[k].name, sizeof out[k].name);
         if (!out[k].name[0]) snprintf(out[k].name, sizeof out[k].name, "MIDI destination %lu", (unsigned long)i + 1);
         snprintf(out[k].spec, sizeof out[k].spec, "midi:%s", out[k].name);
@@ -165,7 +165,7 @@ backend *midi_open(const output_info *o, char *err, size_t errlen)
     }
     snprintf(mb->base.name, sizeof mb->base.name, "%s", o->name);
     snprintf(mb->base.spec, sizeof mb->base.spec, "%s", o->spec);
-    mb->base.is_au = 0;
+    mb->base.is_synth = 0;
     mb->base.rate = 44100.0;           /* the clock's unit: frames of a nominal 44.1 kHz */
     mb->base.quantum = 1;
     mb->base.send = midi_send;

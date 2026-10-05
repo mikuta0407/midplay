@@ -83,11 +83,11 @@ void settings_draw(sbuf *sb, settings_ui *s, const config *cfg, const char *curr
     used++;
     if (s->picking) {
         sb_attr(sb, ATTR(245, -1, 0, 0, 0));
-        sb_str(sb, "  Choose an output (Audio Units play on the default audio device):");
+        sb_str(sb, "  Choose an output (" SYNTH_KIND " outputs play on the default audio device):");
         sb_eol(sb);
         used++;
         for (i = 0; i < (int)s->nouts && used < H - 2; i++, used++) {
-            snprintf(buf, sizeof buf, "%3d. [%s] %-40s %s", i + 1, s->outs[i].is_au ? "AU  " : "MIDI", s->outs[i].name,
+            snprintf(buf, sizeof buf, "%3d. [%-4s] %-40s %s", i + 1, s->outs[i].is_synth ? SYNTH_KIND : "MIDI", s->outs[i].name,
                      s->outs[i].spec);
             sb_attr(sb, i == s->osel ? ATTR(231, 25, 0, 1, 0) : A_NONE);
             sb_str(sb, i == s->osel ? " > " : "   ");
@@ -95,7 +95,7 @@ void settings_draw(sbuf *sb, settings_ui *s, const config *cfg, const char *curr
             sb_eol(sb);
         }
         if (!s->nouts) {
-            sb_str(sb, "   (no Audio Unit instruments and no MIDI destinations found)");
+            sb_str(sb, "   (no " SYNTH_NOUN " and no MIDI destinations found)");
             sb_eol(sb);
             used++;
         }

@@ -8,7 +8,7 @@
 
 size_t outputs_list(output_info *out, size_t cap)
 {
-    size_t n = au_list(out, cap);
+    size_t n = synth_list(out, cap);
     return n + midi_list(out + n, cap - n);
 }
 
@@ -37,10 +37,13 @@ int outputs_find(const char *spec, output_info *found)
     }
     for (i = 0; i < n; i++)               /* exact spec first */
         if (!strcmp(all[i].spec, spec)) { *found = all[i]; return 0; }
+#ifndef __APPLE__
+    if (!strncmp(spec, "sf:", 3) && synth_from_path(spec + 3, found) == 0) return 0;   /* any SoundFont file */
+#endif
     for (i = 0; i < n; i++) {
         const char *want = NULL;
-        if (!strncmp(spec, "au:", 3) && all[i].is_au) want = spec + 3;
-        else if (!strncmp(spec, "midi:", 5) && !all[i].is_au) want = spec + 5;
+        if (!strncmp(spec, SYNTH_PREFIX, 3) && all[i].is_synth) want = spec + 3;
+        else if (!strncmp(spec, "midi:", 5) && !all[i].is_synth) want = spec + 5;
         else if (!strchr(spec, ':')) want = spec;
         if (want && (contains_nocase(all[i].name, want) || contains_nocase(all[i].spec, want))) {
             *found = all[i];
@@ -54,8 +57,13 @@ int outputs_default(output_info *found)
 {
     output_info all[256];
     size_t n = outputs_list(all, 256), i;
+#ifdef __APPLE__
     for (i = 0; i < n; i++)
         if (!strcmp(all[i].spec, "au:appl/dls ")) { *found = all[i]; return 0; }
+#else
+    for (i = 0; i < n; i++)
+        if (all[i].is_synth && contains_nocase(all[i].spec, "/FluidR3_GM.sf")) { *found = all[i]; return 0; }
+#endif
     if (!n) return -1;
     *found = all[0];
     return 0;
@@ -63,14 +71,14 @@ int outputs_default(output_info *found)
 
 backend *output_open(const output_info *o, int null_audio, char *err, size_t errlen)
 {
-    return o->is_au ? au_open(o, null_audio, err, errlen) : midi_open(o, err, errlen);
+    return o->is_synth ? synth_open(o, null_audio, err, errlen) : midi_open(o, err, errlen);
 }
 
 int output_render_hash(const output_info *o, song *s, double rate, char hex[65], char *err, size_t errlen)
 {
-    if (!o->is_au) {
-        snprintf(err, errlen, "only an Audio Unit can render offline");
+    if (!o->is_synth) {
+        snprintf(err, errlen, "only a synth (" SYNTH_PREFIX ") can render offline");
         return -1;
     }
-    return au_render_hash(o, s, rate, hex, err, errlen);
+    return synth_render_hash(o, s, rate, hex, err, errlen);
 }
