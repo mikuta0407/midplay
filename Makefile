@@ -1,7 +1,7 @@
 # midplay -- macOS (CoreAudio, AudioToolbox, CoreMIDI) or Linux (ALSA, FluidSynth)
 CC      ?= cc
 CFLAGS  ?= -O2 -g
-CFLAGS  += -std=c11 -Wall -Wextra
+override CFLAGS += -std=c11 -Wall -Wextra
 PREFIX  ?= $(HOME)/.local
 OS      := $(shell uname -s)
 COMMON  := $(filter-out src/out_%.c,$(wildcard src/*.c))
@@ -15,7 +15,7 @@ SINK    := tests/midi_sink.c
 SINKLIB := -framework CoreMIDI -framework CoreFoundation
 else
 PKGS    := alsa fluidsynth
-CFLAGS  += -D_DEFAULT_SOURCE -Wno-format-truncation $(shell pkg-config --cflags $(PKGS))
+override CFLAGS += -D_DEFAULT_SOURCE -Wno-format-truncation $(shell pkg-config --cflags $(PKGS))
 SRC     := $(COMMON) src/out_alsa.c src/out_fluid.c
 LIBS    := $(shell pkg-config --libs $(PKGS)) -lpthread
 SINK    := tests/midi_sink_alsa.c

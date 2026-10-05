@@ -11,6 +11,7 @@
  *   --exit-at-end / --stay         at the end of the song quit to the shell / stop and stay
  *   --ascii             draw with ASCII only
  *   --null-audio        (testing) drive the synth from a timer and discard the sound
+ *   --version
  *
  * Settings changed on the settings screen (c) are kept in ~/.config/midplay/config ($MIDPLAY_CONFIG);
  * command-line options apply to this run only.
@@ -30,6 +31,8 @@
 #include "smf.h"
 #include "term.h"
 #include "view.h"
+
+#define MIDPLAY_VERSION "0.1.0"
 
 enum { SCR_BROWSER, SCR_PLAYER, SCR_SETTINGS };
 
@@ -67,6 +70,7 @@ static void usage(FILE *f)
             "  --exit-at-end, --stay       at the end: quit to the shell / stop and stay\n"
             "  --ascii            ASCII-only drawing\n"
             "  --null-audio       (testing) synth driven by a timer, sound discarded\n"
+            "  --version          print the version\n"
             "settings: %s\n",
             config_path());
 }
@@ -313,6 +317,7 @@ int main(int argc, char **argv)
         else if (!strcmp(argv[i], "--ascii")) ascii = 1;
         else if (!strcmp(argv[i], "--null-audio")) a.null_audio = 1;
         else if (!strcmp(argv[i], "-h") || !strcmp(argv[i], "--help")) { usage(stdout); return 0; }
+        else if (!strcmp(argv[i], "--version")) { printf("midplay %s\n", MIDPLAY_VERSION); return 0; }
         else if (argv[i][0] == '-') { usage(stderr); return 2; }
         else path = argv[i];
     }

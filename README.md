@@ -8,6 +8,22 @@ MIDI の出力先（MIDI 機器、他のアプリ）に演奏させ、16 パー�
 | macOS | Audio Unit 音源（`au:MANU/SUBT`） | CoreMIDI の出力先（MIDI 機器、IAC バス、他のアプリ） |
 | Linux | FluidSynth + SoundFont（`sf:/path/to/file.sf2`） | ALSA シーケンサのポート（MIDI 機器、FluidSynth/TiMidity++ などのデーモン） |
 
+## インストール
+
+Homebrew（macOS arm64、Linux arm64 / amd64）:
+
+```sh
+brew install mikuta0407/apps/midplay
+```
+
+または [Releases](https://github.com/mikuta0407/midplay/releases) のビルド済みバイナリを展開し、`midplay` を
+`PATH` の通った場所に置く。
+
+- macOS: 追加で要るものはない。ブラウザでダウンロードした場合は `xattr -d com.apple.quarantine midplay` で隔離属性を外す。
+- Linux: 実行時に ALSA と FluidSynth のライブラリ、SoundFont が要る（glibc 2.34 以降。Ubuntu 22.04 / Debian 12 以降）。
+  Debian/Ubuntu なら `sudo apt install libasound2 libfluidsynth3 fluid-soundfont-gm`
+  （Ubuntu 24.04 以降は `libasound2t64`）。
+
 ## ビルド
 
 ```sh
@@ -40,6 +56,7 @@ midplay hash -o au:appl/dls song.mid    # ソフトウェア音源でオフラ�
 | `--exit-at-end` / `--stay` | 曲の最後で停止してシェルに戻る／停止して画面に残る |
 | `--ascii` | ASCII だけで描く（ブロック文字が全角幅になる端末向け） |
 | `--null-audio` | （試験用）ソフトウェア音源をタイマーで駆動し音は捨てる |
+| `--version` | バージョンを表示する |
 
 曲の最後まで行くと必ず停止する。シェルに戻るかどうかは `--exit-at-end` か設定画面で選ぶ。
 
@@ -90,3 +107,7 @@ make build/midi_sink && python3 tests/check_midi.py /tmp/demo.mid    # 仮想 MI
 
 `build/midi_sink` は macOS では CoreMIDI の仮想出力先、Linux では ALSA シーケンサのポート
 （`tests/midi_sink_alsa.c`。`snd-seq` カーネルモジュールが要る）。
+
+## ライセンス
+
+MIT（[LICENSE](LICENSE)）。Linux 版は FluidSynth（LGPL-2.1）と alsa-lib（LGPL-2.1）に動的リンクする。
