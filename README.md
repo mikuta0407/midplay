@@ -1,113 +1,126 @@
 # midplay
 
-macOS と Linux のターミナルで動く Standard MIDI File プレイヤー。ソフトウェア音源（既定の音声出力で鳴らす）か
-MIDI の出力先（MIDI 機器、他のアプリ）に演奏させ、16 パートの状態・ピアノロール・イベントリストを表示する。
+English | [日本語](README.ja.md)
 
-| | ソフトウェア音源（`midplay list` の `AU` / `SF2`） | MIDI 出力先（`MIDI`） |
+A Standard MIDI File player for the macOS and Linux terminal. It plays through a software synth (on the
+default audio output) or sends to a MIDI destination (a MIDI device or another program), and shows the
+state of the 16 parts, a piano roll and the event list.
+
+![midplay playing a song](docs/screenshot.png)
+
+| | Software synth (`AU` / `SF2` in `midplay list`) | MIDI destination (`MIDI`) |
 |---|---|---|
-| macOS | Audio Unit 音源（`au:MANU/SUBT`） | CoreMIDI の出力先（MIDI 機器、IAC バス、他のアプリ） |
-| Linux | FluidSynth + SoundFont（`sf:/path/to/file.sf2`） | ALSA シーケンサのポート（MIDI 機器、FluidSynth/TiMidity++ などのデーモン） |
+| macOS | Audio Unit instruments (`au:MANU/SUBT`) | CoreMIDI destinations (MIDI devices, the IAC bus, other apps) |
+| Linux | FluidSynth + a SoundFont (`sf:/path/to/file.sf2`) | ALSA sequencer ports (MIDI devices, daemons such as FluidSynth / TiMidity++) |
 
-## インストール
+## Install
 
-Homebrew（macOS arm64、Linux arm64 / amd64）:
+Homebrew (macOS arm64, Linux arm64 / amd64):
 
 ```sh
 brew install mikuta0407/apps/midplay
 ```
 
-または [Releases](https://github.com/mikuta0407/midplay/releases) のビルド済みバイナリを展開し、`midplay` を
-`PATH` の通った場所に置く。
+Or unpack a prebuilt binary from [Releases](https://github.com/mikuta0407/midplay/releases) and put
+`midplay` somewhere on your `PATH`.
 
-- macOS: 追加で要るものはない。ブラウザでダウンロードした場合は `xattr -d com.apple.quarantine midplay` で隔離属性を外す。
-- Linux: 実行時に ALSA と FluidSynth のライブラリ、SoundFont が要る（glibc 2.34 以降。Ubuntu 22.04 / Debian 12 以降）。
-  Debian/Ubuntu なら `sudo apt install libasound2 libfluidsynth3 fluid-soundfont-gm`
-  （Ubuntu 24.04 以降は `libasound2t64`）。
+- macOS: nothing else is needed. If you downloaded it with a browser, clear the quarantine attribute with
+  `xattr -d com.apple.quarantine midplay`.
+- Linux: needs the ALSA and FluidSynth libraries and a SoundFont at run time (glibc 2.34 or later: Ubuntu
+  22.04 / Debian 12 or later). On Debian/Ubuntu: `sudo apt install libasound2 libfluidsynth3 fluid-soundfont-gm`
+  (`libasound2t64` on Ubuntu 24.04 and later).
 
-## ビルド
+## Build
 
 ```sh
 make                 # build/midplay
-make install         # ~/.local/bin/midplay（PREFIX=... で変更）
+make install         # ~/.local/bin/midplay (change with PREFIX=...)
 ```
 
-- macOS: Xcode か Command Line Tools が要る。依存は macOS の AudioToolbox / CoreAudio / CoreMIDI / CoreFoundation / libiconv のみ。
-- Linux: C コンパイラ、pkg-config、ALSA と FluidSynth の開発パッケージが要る。
-  Debian/Ubuntu なら `sudo apt install build-essential pkg-config libasound2-dev libfluidsynth-dev fluid-soundfont-gm`
-  （Fedora なら `alsa-lib-devel fluidsynth-devel fluid-soundfont-gm`）。
+- macOS: needs Xcode or the Command Line Tools. The only dependencies are macOS's AudioToolbox / CoreAudio /
+  CoreMIDI / CoreFoundation / libiconv.
+- Linux: needs a C compiler, pkg-config, and the ALSA and FluidSynth development packages.
+  On Debian/Ubuntu: `sudo apt install build-essential pkg-config libasound2-dev libfluidsynth-dev fluid-soundfont-gm`
+  (on Fedora: `alsa-lib-devel fluidsynth-devel fluid-soundfont-gm`).
 
-## 使い方
+## Usage
 
 ```sh
-midplay                      # ファイラ（前回のディレクトリ、なければカレント）
-midplay ~/Music/midi         # そのディレクトリをファイラで開く
-midplay song.mid             # すぐ開く
-midplay -o midi:IAC song.mid # 出力を指定して起動
-midplay list                 # 使える出力の一覧（番号は -o に使える）
-midplay hash -o au:appl/dls song.mid    # ソフトウェア音源でオフライン描画し sha256 を表示（検証用）
+midplay                      # file browser (the last directory, or the current one)
+midplay ~/Music/midi         # open that directory in the file browser
+midplay song.mid             # open it right away
+midplay -o midi:IAC song.mid # start with this output
+midplay list                 # the outputs (the numbers work with -o)
+midplay hash -o au:appl/dls song.mid    # render offline through a synth and print its sha256 (for checking)
 ```
 
-オプション（その回だけ有効。保存はしない）:
+Options (for this run only; not saved):
 
-| オプション | 意味 |
+| Option | Meaning |
 |---|---|
-| `-o, --output OUT` | `au:MANU/SUBT`（四文字コード）、`au:名前の一部`（macOS）、`sf:SoundFontのパス`、`sf:名前の一部`（Linux）、`midi:名前の一部`、または `midplay list` の番号 |
-| `--autoplay` / `--no-autoplay` | ファイルを開いたらすぐ再生する／Space を押すまで待つ |
-| `--exit-at-end` / `--stay` | 曲の最後で停止してシェルに戻る／停止して画面に残る |
-| `--ascii` | ASCII だけで描く（ブロック文字が全角幅になる端末向け） |
-| `--null-audio` | （試験用）ソフトウェア音源をタイマーで駆動し音は捨てる |
-| `--version` | バージョンを表示する |
+| `-o, --output OUT` | `au:MANU/SUBT` (four-character codes), `au:part of the name` (macOS), `sf:path to a SoundFont`, `sf:part of the name` (Linux), `midi:part of the name`, or a number from `midplay list` |
+| `--autoplay` / `--no-autoplay` | start playing as soon as a file is opened / wait for Space |
+| `--exit-at-end` / `--stay` | at the end of the song, stop and return to the shell / stop and stay on screen |
+| `--ascii` | draw with ASCII only (for terminals that show block characters double-width) |
+| `--null-audio` | (testing) drive the software synth from a timer and discard the sound |
+| `--version` | print the version |
 
-曲の最後まで行くと必ず停止する。シェルに戻るかどうかは `--exit-at-end` か設定画面で選ぶ。
+Playback always stops at the end of the song. Whether it then returns to the shell is chosen with
+`--exit-at-end` or on the settings screen.
 
-## キー
+## Keys
 
-再生画面: `Space` 再生/停止（最後まで行った後は頭から）、`←` `→` 1小節、`,` `.` 8小節、`↑` `↓` パート選択、
-`m` ミュート、`s` ソロ、`u` 解除、`r` 先頭、`o` ファイラ、`c` 設定、`q` 終了。
+Player: `Space` play/stop (from the top once it has reached the end), `←` `→` one bar, `,` `.` eight bars,
+`↑` `↓` select a part, `m` mute, `s` solo, `u` clear, `r` back to the top, `o` file browser, `c` settings, `q` quit.
 
-ファイラ: `↑` `↓` `PgUp` `PgDn` 移動、`Enter`/`→` 開く・再生、`←`/`BS` 親へ、`~` ホーム、`a` 全ファイル表示の切替、
-`H` 隠しファイル、`Esc` 再生画面へ戻る、`c` 設定、`q` 終了。
+File browser: `↑` `↓` `PgUp` `PgDn` move, `Enter`/`→` open / play, `←`/`BS` parent, `~` home, `a` show all files,
+`H` hidden files, `Esc` back to the player, `c` settings, `q` quit.
 
-設定画面（`c`）: 出力の選択、開いたらすぐ再生するか、曲の最後でシェルに戻るか、ASCII 描画。
-変更はすぐ `~/.config/midplay/config`（`$MIDPLAY_CONFIG` で変更可）に保存される。出力を変えると、再生位置を保ったまま切り替わる。
+Settings (`c`): the output, whether to start playing on open, whether to return to the shell at the end, ASCII
+drawing. Changes are saved at once to `~/.config/midplay/config` (or `$MIDPLAY_CONFIG`). Changing the output
+switches over keeping the position.
 
-再生中の出力名は画面2行目（ファイラでも2行目）に出る。
+The output in use is shown on the second line of the screen (in the file browser too).
 
-## Linux での出力
+## Outputs on Linux
 
-- SoundFont は `$MIDPLAY_SOUNDFONTS`（ディレクトリかファイルを `:` 区切り）、`~/.local/share/soundfonts`
-  （`$XDG_DATA_HOME/soundfonts`）、`/usr/local/share/soundfonts`、`/usr/share/soundfonts`、`/usr/share/sounds/sf2`、
-  `/usr/share/sounds/sf3` の `*.sf2` / `*.sf3` を探す。一覧にないファイルも `-o sf:/path/to/file.sf2` で使える。
-  既定は FluidR3_GM があればそれ、なければ一覧の先頭。
-- 音声は FluidSynth のドライバで出す。PipeWire、PulseAudio、ALSA の順に開けたものを使い、
-  `$MIDPLAY_AUDIO_DRIVER`（`pipewire`、`pulseaudio`、`alsa`、`jack` など）で固定できる。
-  サンプルレートは 44100 Hz（`$MIDPLAY_RATE` で変更）。
-- MIDI 出力先は ALSA シーケンサで書き込みを受け付けるポート全部（「クライアント名: ポート名」で表示）。
-  ハードウェアの MIDI 機器、`fluidsynth -a pipewire -s ...`、`timidity -iA` などのデーモンに送れる。
+- SoundFonts (`*.sf2` / `*.sf3`) are looked for in `$MIDPLAY_SOUNDFONTS` (directories or files, separated by `:`),
+  `~/.local/share/soundfonts` (`$XDG_DATA_HOME/soundfonts`), `/usr/local/share/soundfonts`, `/usr/share/soundfonts`,
+  `/usr/share/sounds/sf2` and `/usr/share/sounds/sf3`. A file that is not in the list works with
+  `-o sf:/path/to/file.sf2`. The default is FluidR3_GM if installed, else the first in the list.
+- Sound goes out through FluidSynth's audio drivers: the first of PipeWire, PulseAudio and ALSA that opens, or
+  the one in `$MIDPLAY_AUDIO_DRIVER` (`pipewire`, `pulseaudio`, `alsa`, `jack`, ...). The sample rate is
+  44100 Hz (change with `$MIDPLAY_RATE`).
+- MIDI destinations are all the ALSA sequencer ports that accept writes (shown as "client name: port name"):
+  hardware MIDI devices, or daemons such as `fluidsynth -a pipewire -s ...` and `timidity -iA`.
 
-## 動作の詳細
+## How it works
 
-- FluidSynth（Linux）: イベントは 64 フレーム（FluidSynth の処理単位）境界にそろえて送るので、`midplay hash` の
-  結果は毎回同じになる。一時停止中は音源を動かさない。
-- Audio Unit（macOS）: 既定の音声出力のサンプルレートで動かす。イベントは 128 フレーム境界にそろえて送るので、
-  `midplay hash` の結果は毎回同じになる。一時停止中は音源を動かさないので、再開は途切れない。
-- MIDI（CoreMIDI / ALSA シーケンサ）: 1 ms 周期のスレッドが時刻になったイベントを即時送信する。一時停止・停止時は全チャンネルに
-  All Notes Off / All Sound Off、曲を開くときとシーク時はそれに Reset All Controllers を加える。
-- シーク: 目標位置より前のノート以外のイベントを送り直す（同じコントローラの最後の値だけ。SysEx、RPN/NRPN、データエントリは全部）。
-- 歌詞・テキストが UTF-8 でなければ Shift_JIS（CP932）として表示する。
-- 音色名は GM 名（XG のバリエーション音色はバンク番号と GM 名）。ドラムは Bank MSB 127/126 で判定。
+- FluidSynth (Linux): events are sent on 64-frame boundaries (FluidSynth's block), so `midplay hash` gives the
+  same result on every run. Paused, the synth is not run.
+- Audio Unit (macOS): runs at the sample rate of the default audio output. Events are sent on 128-frame
+  boundaries, so `midplay hash` gives the same result on every run. Paused, the instrument is not run, so
+  playing resumes seamlessly.
+- MIDI (CoreMIDI / ALSA sequencer): a thread waking every millisecond sends each event as soon as its time
+  comes. Pausing and stopping send All Notes Off / All Sound Off on every channel; opening a song and seeking
+  add Reset All Controllers.
+- Seeking: everything but the notes before the target is sent again (for a controller only its last value;
+  SysEx, RPN/NRPN and data entry in full).
+- Lyrics and text that are not UTF-8 are shown as Shift_JIS (CP932).
+- Voice names are the GM names (XG variation voices show the bank number and the GM name). Drum parts are told
+  by Bank MSB 127/126.
 
-## 試験
+## Tests
 
 ```sh
-python3 tests/tui_snapshot.py demo /tmp/demo.mid                 # 16 パートの試験曲
-python3 tests/tui_snapshot.py --at 3 -- --null-audio /tmp/demo.mid   # 疑似端末で画面を取り込む（pyte が要る）
-make build/midi_sink && python3 tests/check_midi.py /tmp/demo.mid    # 仮想 MIDI 出力先で順序と時刻を照合
+python3 tests/tui_snapshot.py demo /tmp/demo.mid                 # a 16-part test song
+python3 tests/tui_snapshot.py --at 3 -- --null-audio /tmp/demo.mid   # capture the screen in a pseudo terminal (needs pyte)
+make build/midi_sink && python3 tests/check_midi.py /tmp/demo.mid    # check order and timing at a virtual MIDI destination
 ```
 
-`build/midi_sink` は macOS では CoreMIDI の仮想出力先、Linux では ALSA シーケンサのポート
-（`tests/midi_sink_alsa.c`。`snd-seq` カーネルモジュールが要る）。
+`build/midi_sink` is a virtual CoreMIDI destination on macOS and an ALSA sequencer port on Linux
+(`tests/midi_sink_alsa.c`; needs the `snd-seq` kernel module).
 
-## ライセンス
+## License
 
-MIT（[LICENSE](LICENSE)）。Linux 版は FluidSynth（LGPL-2.1）と alsa-lib（LGPL-2.1）に動的リンクする。
+MIT ([LICENSE](LICENSE)). The Linux build links dynamically to FluidSynth (LGPL-2.1) and alsa-lib (LGPL-2.1).
